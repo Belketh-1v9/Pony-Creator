@@ -71,7 +71,7 @@
 </head>
 <body>
   <header>
-    <h1>Pony Creator by Belketh</h1>
+    <h1>MLP Pony Creator — HTML MVP</h1>
     <div class="actions">
       <span id="modeStatus" class="status">Tryb: <b>Online</b> (assets z repo)</span>
 
@@ -1362,6 +1362,29 @@ function thumbnailGridForEyeOverlay(group, overlayType, labelText) {
     group.appendChild(block);
 }
 
+
+async function setDisplayedAsset(cat, fileName) {
+    // Body and tail can have two mutually exclusive render categories:
+    // normal body/tail and body-merpony/tail-merpony. Route user clicks through
+    // this helper so the visible variant is replaced cleanly and the inactive
+    // twin is removed from the stage.
+    const isSwitchable = cat === "body" || cat === "tail" || cat === "body-merpony" || cat === "tail-merpony";
+    if (!isSwitchable) {
+      await setAsset(cat, fileName);
+      return;
+    }
+
+    const base = cat.startsWith("body") ? "body" : "tail";
+    const effCat = state.merpony ? `${base}-merpony` : base;
+    const list = ASSET_MANIFEST[effCat] || [];
+    const pick = (fileName && list.includes(fileName)) ? fileName : (list[0] || null);
+    if (!pick) return;
+
+    state.selected[effCat] = pick;
+    state.layers = state.layers.filter(x => x.category !== base && x.category !== `${base}-merpony`);
+    await setAsset(effCat, pick);
+}
+
 function thumbnailGridForCategory(group, cat, labelText = null) {
     const block = document.createElement("div");
     block.className = "thumb-block";
@@ -1400,8 +1423,9 @@ function thumbnailGridForCategory(group, cat, labelText = null) {
       setupThumbImage(img, effCat, f);
 
       btn.appendChild(img);
-      btn.addEventListener("click", () => {
-        setAsset(effCat, f);
+      btn.addEventListener("click", async () => {
+        state.selected[effCat] = f;
+        await setDisplayedAsset(effCat, f);
         grid.querySelectorAll(".thumb").forEach(x => x.classList.remove("selected"));
         btn.classList.add("selected");
       });
@@ -1709,19 +1733,19 @@ addEyeControls(secEyes);
     c.addEventListener("change", async e => {
       state.merpony = !!e.target.checked;
 
-      // Remove any previous body/body-merpony and tail/tail-merpony layer entries
+      // Remove any previous body/body-merpony and tail/tail-merpony layer entries,
+      // then load the currently selected asset from the newly active variant.
       state.layers = state.layers.filter(x => !["body","body-merpony","tail","tail-merpony"].includes(x.category));
 
-      // Decide effective categories and load them before rebuilding the UI/stage.
-      const jobs = ["body","tail"].map(base => {
-        const eff = state.merpony ? (base + "-merpony") : base;
+      const jobs = ["body", "tail"].map(base => {
+        const eff = state.merpony ? `${base}-merpony` : base;
         const list = ASSET_MANIFEST[eff] || [];
         let pick = state.selected[eff];
         if (!pick || !list.includes(pick)) {
           pick = list[0] || null;
           state.selected[eff] = pick;
         }
-        return pick ? setAsset(eff, pick) : Promise.resolve();
+        return pick ? setDisplayedAsset(eff, pick) : Promise.resolve();
       });
 
       await Promise.allSettled(jobs);
