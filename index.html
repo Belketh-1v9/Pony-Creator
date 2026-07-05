@@ -110,9 +110,6 @@
       "accessories","cutiemark","gem"
     , "background"];
 
-    const MERPONY_CATEGORIES = ["body-merpony", "tail-merpony"];
-    const MANIFEST_CATEGORIES = [...CATEGORIES, ...MERPONY_CATEGORIES];
-
     const COLOR_TOKENS = [
       "coat","detail-1","detail-2","hooves",
       "eye-shadow","eye-white","iris","iris-1","iris-2","pupil","eye-lashes",
@@ -168,9 +165,6 @@
 // Eye overlay manifests
 const IRIS_MANIFEST = [];
 const EYE_GLMR_MANIFEST = []; // using assets/glimmer/ as source for eye glimmer variants
-
-    const PRELOADED_ASSETS = new Map();
-    const assetCacheKey = (category, fileName) => `${category}/${fileName}`;
 
 
     // Tryb lokalny (upload)
@@ -234,9 +228,6 @@ colors: {
         lightness: 100
       }
 };
-
-    state.selected["body-merpony"] = null;
-    state.selected["tail-merpony"] = null;
 
     // =========================
     // 3) UTILS (kolory, tokeny, itp.)
@@ -1190,29 +1181,10 @@ function reapplyAllColors() {
       if (state.crystal.enabled) refreshCrystalOverlay(); // po przebudowie sceny odśwież nakładkę
       refreshEyeOverlay();
     }
-    function cloneLayerItem(item) {
-      return {
-        ...item,
-        node: item.node?.cloneNode ? item.node.cloneNode(true) : item.node
-      };
-    }
-
-    async function preloadAsset(category, fileName) {
-      if (!category || !fileName) return null;
-      const key = assetCacheKey(category, fileName);
-      if (PRELOADED_ASSETS.has(key)) return PRELOADED_ASSETS.get(key);
-      const layers = await loadSVGAsset(category, fileName);
-      PRELOADED_ASSETS.set(key, layers);
-      return layers;
-    }
-
     async function setAsset(category, fileName) {
       if (category === "glimmer") { console.info("Ignoring legacy glimmer category (handled by Eye overlay)."); return; }
       try {
-        const key = assetCacheKey(category, fileName);
-        const cached = PRELOADED_ASSETS.get(key);
-        const sourceLayers = cached || await preloadAsset(category, fileName);
-        const layers = (sourceLayers || []).map(cloneLayerItem);
+        const layers = await loadSVGAsset(category, fileName);
         state.layers = state.layers.filter(x => x.category !== category);
         state.layers.push(...layers);
         state.selected[category] = fileName;
@@ -1734,18 +1706,18 @@ addEyeControls(secEyes);
     const row = document.createElement("div"); row.className="row";
     const l = document.createElement("label"); l.textContent = "Merpony";
     const c = document.createElement("input"); c.type="checkbox"; c.checked = !!state.merpony;
-    c.addEventListener("change", async e => {
+    c.addEventListener("change", e => {
  state.merpony = !!e.target.checked;
       // Remove any previous body/body-merpony and tail/tail-merpony layer entries
       state.layers = state.layers.filter(x => !["body","body-merpony","tail","tail-merpony"].includes(x.category));
       // Decide effective categories and pick files
-      for (const base of ["body","tail"]) {
+      ["body","tail"].forEach(base => {
         const eff = (state.merpony && (base === "body" || base === "tail")) ? (base + "-merpony") : base;
         const list = ASSET_MANIFEST[eff] || [];
         let pick = state.selected[eff];
         if (!pick || !list.includes(pick)) pick = list[0];
-        if (pick) await setAsset(eff, pick);
-      }
+        if (pick) setAsset(eff, pick);
+      });
       buildAssetsForm();
       rebuildStage();
     });
@@ -2555,10 +2527,6 @@ function setCrystalParams(patch) {
           const f = obj.selected[cat];
           if (f) jobs.push(setAsset(cat, f));
         }
-        for (const cat of MERPONY_CATEGORIES) {
-          const f = obj.selected[cat];
-          if (f) state.selected[cat] = f;
-        }
       }
       Promise.allSettled(jobs).then(()=>{
         buildColorsForm();
@@ -2574,8 +2542,7 @@ function setCrystalParams(patch) {
     function normalizePath(p){return p.replace(/\\/g,"/")}
     function extractAssetsRelativePath(full){const n=full.toLowerCase();const idx=n.lastIndexOf("assets/");return idx>=0?full.slice(idx):full}
     function buildManifestFromVirtualFS() {
-      for (const c of MANIFEST_CATEGORIES) ASSET_MANIFEST[c] = [];
-      PRELOADED_ASSETS.clear();
+      for (const c of CATEGORIES) ASSET_MANIFEST[c] = [];
       CRYSTAL_MANIFEST.length = 0;
       IRIS_MANIFEST.length = 0;
       EYE_GLMR_MANIFEST.length = 0;
@@ -2607,64 +2574,49 @@ function setCrystalParams(patch) {
           }
         }
       }
-      for (const c of MANIFEST_CATEGORIES) ASSET_MANIFEST[c].sort();
+      for (const c of CATEGORIES) ASSET_MANIFEST[c].sort();
       CRYSTAL_MANIFEST.sort();
       IRIS_MANIFEST.sort();
       EYE_GLMR_MANIFEST.sort();
     }
     async function autoLoadFirstFromManifest() {
       const jobs = [];
-
       for (const cat of CATEGORIES) {
         const list = ASSET_MANIFEST[cat] || [];
         if (!list.length) continue;
         const pick = (state.selected[cat] && list.includes(state.selected[cat])) ? state.selected[cat] : list[0];
         jobs.push(setAsset(cat, pick));
-      }
-
-      // Merpony assets are fetched immediately and kept in cache, but they are not rendered
-      // and they stay hidden from the Body/Tail UI until the Merpony switch is active.
-      for (const cat of MERPONY_CATEGORIES) {
-        const list = ASSET_MANIFEST[cat] || [];
-        if (!list.length) continue;
-        const pick = (state.selected[cat] && list.includes(state.selected[cat])) ? state.selected[cat] : list[0];
-        state.selected[cat] = pick;
-        for (const fileName of list) {
-          jobs.push(preloadAsset(cat, fileName).catch(err => {
-            console.warn(`Nie udało się wstępnie wczytać ${cat}/${fileName}`, err);
-          }));
-        }
-      }
-
+      
+      // Eye overlay: choose first available iris/glimmer if not set
       if (!state.eyeOverlay.iris && IRIS_MANIFEST.length) {
         state.eyeOverlay.iris = IRIS_MANIFEST[0];
       }
       if (!state.eyeOverlay.glimmer && EYE_GLMR_MANIFEST.length) {
         state.eyeOverlay.glimmer = EYE_GLMR_MANIFEST[0];
       }
-
-      await Promise.allSettled(jobs);
+      await Promise.resolve();
       refreshEyeOverlay();
-
+}
+      await Promise.allSettled(jobs);
       if (!state.crystal.texture && CRYSTAL_MANIFEST.length) {
         state.crystal.texture = CRYSTAL_MANIFEST[0];
       }
       if (state.links?.tailMatchesMane) { propagateManeToTail(); reapplyAllColors(); }
     }
-
     async function loadManifestFromServer() {
       try {
         const resp = await fetch("assets/manifest.json", { cache: "no-cache" });
         if (!resp.ok) throw new Error(`assets/manifest.json: ${resp.status} ${resp.statusText}`);
         const manifest = await resp.json();
 
-        for (const c of MANIFEST_CATEGORIES) ASSET_MANIFEST[c] = [];
-        PRELOADED_ASSETS.clear();
+        for (const c of CATEGORIES) ASSET_MANIFEST[c] = [];
+        ASSET_MANIFEST["body-merpony"] = [];
+        ASSET_MANIFEST["tail-merpony"] = [];
         CRYSTAL_MANIFEST.length = 0;
         IRIS_MANIFEST.length = 0;
         EYE_GLMR_MANIFEST.length = 0;
 
-        for (const key of MANIFEST_CATEGORIES) {
+        for (const key of [...CATEGORIES, "body-merpony", "tail-merpony"]) {
           if (Array.isArray(manifest[key])) {
             ASSET_MANIFEST[key] = manifest[key]
               .filter(fileName => typeof fileName === "string" && fileName.toLowerCase().endsWith(".svg"))
