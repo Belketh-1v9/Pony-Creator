@@ -743,6 +743,26 @@ function reapplyAllColors() {
     // =========================
     // 5) ŁADOWANIE ASSETÓW (SVG)
     // =========================
+    async function fetchWithRetry(url, options = {}, attempts = 3, delayMs = 250) {
+      let lastErr;
+
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const resp = await fetch(url, options);
+          if (resp.ok) return resp;
+          lastErr = new Error(`Nie mogę pobrać ${url}: ${resp.status} ${resp.statusText}`);
+        } catch (err) {
+          lastErr = err;
+        }
+
+        if (i < attempts - 1) {
+          await new Promise(resolve => setTimeout(resolve, delayMs * (i + 1)));
+        }
+      }
+
+      throw lastErr;
+    }
+
     async function readSVGText(url, category, fileName) {
       if (useVirtualFS) {
         const key = `assets/${category}/${fileName}`;
@@ -750,8 +770,8 @@ function reapplyAllColors() {
         if (!f) throw new Error(`Brak wirtualnego pliku: ${key}`);
         return await f.text();
       }
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`Nie mogę pobrać ${url}: ${resp.status} ${resp.statusText}`);
+
+      const resp = await fetchWithRetry(url, { cache: "no-cache" }, 3, 250);
       return await resp.text();
     }
     async function loadSVGAsset(category, fileName) {
@@ -2605,7 +2625,7 @@ function setCrystalParams(patch) {
     }
     async function loadManifestFromServer() {
       try {
-        const resp = await fetch("assets/manifest.json", { cache: "no-cache" });
+        const resp = await fetchWithRetry("assets/manifest.json", { cache: "no-cache" }, 3, 250);
         if (!resp.ok) throw new Error(`assets/manifest.json: ${resp.status} ${resp.statusText}`);
         const manifest = await resp.json();
 
