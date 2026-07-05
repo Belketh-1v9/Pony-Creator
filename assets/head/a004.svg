@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1000"
+   height="1000"
+   viewBox="0 0 1000 1000"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1" /><g
+     id="layer3"
+     style="display:inline"><title
+       id="title8">coat</title><path
+       style="display:inline;fill:#00ffff;stroke-width:0.885764"
+       d="m 398.1977,478.45083 c 0,0 -11.95801,11.35847 -71.3982,8.18581 -27.40757,-1.4629 -30.85039,1.99653 -40.75413,-0.49443 -22.69543,-5.27054 -45.87645,-31.22237 -50.72951,-52.90266 -0.18198,-6.53947 17.983,-15.70528 24.42464,-28.59314 5.66061,-11.32524 -1.98546,-80.06755 43.86596,-108.55657 79.53558,-49.4181 130.35084,9.01082 141.4321,23.19305 24.67303,31.57746 9.55009,110.50804 9.55009,110.50804 z"
+       id="path6"
+       color="coat"
+       data-layer="400" /><path
+       style="fill:none;stroke:#000000;stroke-width:5;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       d="m 398.1977,478.45083 c 0,0 -11.95801,11.35847 -71.3982,8.18581 -27.40757,-1.4629 -30.85039,1.99653 -40.75413,-0.49443 -22.69543,-5.27054 -45.87645,-31.22237 -50.72951,-52.90266 -0.18198,-6.53947 17.983,-15.70528 24.42464,-28.59314 5.66061,-11.32524 -1.98546,-80.06755 43.86596,-108.55657 79.53558,-49.4181 130.35084,9.01082 141.4321,23.19305 24.67303,31.57746 9.55009,110.50804 9.55009,110.50804"
+       id="path8"
+       color="coat_contour"
+       data-layer="400" /><path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       d="m 266.8022,474.89568 c 10.16512,-0.72608 18.27725,-10.01579 23.87638,-14.75679 -2.42423,8.70562 -19.79218,16.11819 -19.79218,16.11819 z"
+       id="path14"
+       color="coat_contour"
+       data-layer="400" /><path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       d="m 269.22269,432.67615 c 0.84413,-0.23829 4.13651,-1.1599 4.70578,-1.29772 0.4879,-0.11812 2.32249,-1.1295 4.32827,-2.24504 -1.85789,3.15366 -3.73289,3.55033 -4.13681,3.71897 -0.2992,0.12493 -3.1729,0.38151 -4.89724,-0.17621 z"
+       id="path15"
+       line="3"
+       color="coat_contour"
+       data-layer="400" /></g></svg>
