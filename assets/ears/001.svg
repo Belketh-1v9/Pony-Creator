@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1000"
+   height="1000"
+   viewBox="0 0 1000 1000"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1" /><g
+     id="g3"
+     style="display:inline"
+     data-layer="100"
+     transform="matrix(0.85966739,-0.0705361,0.0705361,0.85966739,-0.94306052,55.642704)"><path
+       style="display:inline;fill:#ff5555;stroke-width:0.885764"
+       d="m 422.71219,315.5608 c 0,0 -0.70116,-17.57165 4.49045,-33.07127 5.47183,-16.33608 17.01076,-30.59731 23.58012,-28.66975 14.31778,4.20106 31.9538,43.87996 32.54023,69.38731 1.06717,46.42009 -26.52462,68.88685 -26.52462,68.88685 z"
+       id="path1"
+       color="coat"
+       data-layer="1200" /><path
+       style="display:inline;fill:none;stroke:#000000;stroke-width:5;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       d="m 422.71219,315.5608 c 0,0 -0.70116,-17.57165 4.49045,-33.07127 5.47183,-16.33608 17.01076,-30.59731 23.58012,-28.66975 14.31778,4.20106 31.9538,43.87996 32.54023,69.38731 1.06717,46.42009 -26.52462,68.88685 -26.52462,68.88685"
+       id="path2"
+       color="coat_contour"
+       data-layer="1200" /></g><g
+     id="layer4"
+     style="display:inline"><path
+       style="display:inline;fill:#ff5555;stroke-width:0.885764"
+       d="m 422.71219,315.5608 c 0,0 -0.70116,-17.57165 4.49045,-33.07127 5.47183,-16.33608 17.01076,-30.59731 23.58012,-28.66975 14.31778,4.20106 31.9538,43.87996 32.54023,69.38731 1.06717,46.42009 -26.52462,68.88685 -26.52462,68.88685 z"
+       id="path7"
+       color="coat"
+       data-layer="1200" /><path
+       style="display:inline;fill:none;stroke:#000000;stroke-width:5;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       d="m 422.71219,315.5608 c 0,0 -0.70116,-17.57165 4.49045,-33.07127 5.47183,-16.33608 17.01076,-30.59731 23.58012,-28.66975 14.31778,4.20106 31.9538,43.87996 32.54023,69.38731 1.06717,46.42009 -26.52462,68.88685 -26.52462,68.88685"
+       id="path16"
+       color="coat_contour"
+       data-layer="1200" /><path
+       style="fill:none;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+       d="m 464.87272,355.59768 c 5.10589,-26.34332 9.44199,-37.05971 -4.17496,-62.44288"
+       id="path17"
+       color="coat_contour"
+       data-layer="1200" /></g></svg>
