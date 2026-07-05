@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
-  <title>Pony Creator </title>
+  <title>Pony Creator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root { --panel:#171a2b; --border:#2a2e45; --chip:#20253b; --muted:#b6c0dd; }
@@ -110,8 +110,8 @@
       "accessories","cutiemark","gem"
     , "background"];
 
-    const EXTRA_ASSET_CATEGORIES = ["body-merpony", "tail-merpony"];
-    const ALL_ASSET_CATEGORIES = [...CATEGORIES, ...EXTRA_ASSET_CATEGORIES];
+    const MERPONY_CATEGORIES = ["body-merpony", "tail-merpony"];
+    const MANIFEST_CATEGORIES = [...CATEGORIES, ...MERPONY_CATEGORIES];
 
     const COLOR_TOKENS = [
       "coat","detail-1","detail-2","hooves",
@@ -160,11 +160,17 @@
     ]);
 
     // Manifest assetów (SVG) + manifest tekstur kryształu
-    const ASSET_MANIFEST = Object.fromEntries(ALL_ASSET_CATEGORIES.map(c => [c, []]));
-    const CRYSTAL_MANIFEST = [];
+    const ASSET_MANIFEST = Object.fromEntries(CATEGORIES.map(c => [c, []]));
+    
+    ASSET_MANIFEST["body-merpony"] = [];
+
+    ASSET_MANIFEST["tail-merpony"] = [];const CRYSTAL_MANIFEST = [];
 // Eye overlay manifests
 const IRIS_MANIFEST = [];
 const EYE_GLMR_MANIFEST = []; // using assets/glimmer/ as source for eye glimmer variants
+
+    const PRELOADED_ASSETS = new Map();
+    const assetCacheKey = (category, fileName) => `${category}/${fileName}`;
 
 
     // Tryb lokalny (upload)
@@ -181,7 +187,7 @@ colors: {
         "mane-main":"#7c55c8","mane-hl-1":"#9f7be2","mane-hl-2":"#bba1f1",
         "tail-main":"#7c55c8","tail-hl-1":"#9f7be2","tail-hl-2":"#bba1f1"
       },
-      selected: Object.fromEntries(ALL_ASSET_CATEGORIES.map(c=>[c, null])),
+      selected: Object.fromEntries(CATEGORIES.map(c=>[c, null])),
       links: { tailMatchesMane: false },
       layers: [],
       crystal: {
@@ -228,6 +234,9 @@ colors: {
         lightness: 100
       }
 };
+
+    state.selected["body-merpony"] = null;
+    state.selected["tail-merpony"] = null;
 
     // =========================
     // 3) UTILS (kolory, tokeny, itp.)
@@ -1181,10 +1190,29 @@ function reapplyAllColors() {
       if (state.crystal.enabled) refreshCrystalOverlay(); // po przebudowie sceny odśwież nakładkę
       refreshEyeOverlay();
     }
+    function cloneLayerItem(item) {
+      return {
+        ...item,
+        node: item.node?.cloneNode ? item.node.cloneNode(true) : item.node
+      };
+    }
+
+    async function preloadAsset(category, fileName) {
+      if (!category || !fileName) return null;
+      const key = assetCacheKey(category, fileName);
+      if (PRELOADED_ASSETS.has(key)) return PRELOADED_ASSETS.get(key);
+      const layers = await loadSVGAsset(category, fileName);
+      PRELOADED_ASSETS.set(key, layers);
+      return layers;
+    }
+
     async function setAsset(category, fileName) {
       if (category === "glimmer") { console.info("Ignoring legacy glimmer category (handled by Eye overlay)."); return; }
       try {
-        const layers = await loadSVGAsset(category, fileName);
+        const key = assetCacheKey(category, fileName);
+        const cached = PRELOADED_ASSETS.get(key);
+        const sourceLayers = cached || await preloadAsset(category, fileName);
+        const layers = (sourceLayers || []).map(cloneLayerItem);
         state.layers = state.layers.filter(x => x.category !== category);
         state.layers.push(...layers);
         state.selected[category] = fileName;
@@ -1362,29 +1390,6 @@ function thumbnailGridForEyeOverlay(group, overlayType, labelText) {
     group.appendChild(block);
 }
 
-
-async function setDisplayedAsset(cat, fileName) {
-    // Body and tail can have two mutually exclusive render categories:
-    // normal body/tail and body-merpony/tail-merpony. Route user clicks through
-    // this helper so the visible variant is replaced cleanly and the inactive
-    // twin is removed from the stage.
-    const isSwitchable = cat === "body" || cat === "tail" || cat === "body-merpony" || cat === "tail-merpony";
-    if (!isSwitchable) {
-      await setAsset(cat, fileName);
-      return;
-    }
-
-    const base = cat.startsWith("body") ? "body" : "tail";
-    const effCat = state.merpony ? `${base}-merpony` : base;
-    const list = ASSET_MANIFEST[effCat] || [];
-    const pick = (fileName && list.includes(fileName)) ? fileName : (list[0] || null);
-    if (!pick) return;
-
-    state.selected[effCat] = pick;
-    state.layers = state.layers.filter(x => x.category !== base && x.category !== `${base}-merpony`);
-    await setAsset(effCat, pick);
-}
-
 function thumbnailGridForCategory(group, cat, labelText = null) {
     const block = document.createElement("div");
     block.className = "thumb-block";
@@ -1423,9 +1428,8 @@ function thumbnailGridForCategory(group, cat, labelText = null) {
       setupThumbImage(img, effCat, f);
 
       btn.appendChild(img);
-      btn.addEventListener("click", async () => {
-        state.selected[effCat] = f;
-        await setDisplayedAsset(effCat, f);
+      btn.addEventListener("click", () => {
+        setAsset(effCat, f);
         grid.querySelectorAll(".thumb").forEach(x => x.classList.remove("selected"));
         btn.classList.add("selected");
       });
@@ -1731,24 +1735,17 @@ addEyeControls(secEyes);
     const l = document.createElement("label"); l.textContent = "Merpony";
     const c = document.createElement("input"); c.type="checkbox"; c.checked = !!state.merpony;
     c.addEventListener("change", async e => {
-      state.merpony = !!e.target.checked;
-
-      // Remove any previous body/body-merpony and tail/tail-merpony layer entries,
-      // then load the currently selected asset from the newly active variant.
+ state.merpony = !!e.target.checked;
+      // Remove any previous body/body-merpony and tail/tail-merpony layer entries
       state.layers = state.layers.filter(x => !["body","body-merpony","tail","tail-merpony"].includes(x.category));
-
-      const jobs = ["body", "tail"].map(base => {
-        const eff = state.merpony ? `${base}-merpony` : base;
+      // Decide effective categories and pick files
+      for (const base of ["body","tail"]) {
+        const eff = (state.merpony && (base === "body" || base === "tail")) ? (base + "-merpony") : base;
         const list = ASSET_MANIFEST[eff] || [];
         let pick = state.selected[eff];
-        if (!pick || !list.includes(pick)) {
-          pick = list[0] || null;
-          state.selected[eff] = pick;
-        }
-        return pick ? setDisplayedAsset(eff, pick) : Promise.resolve();
-      });
-
-      await Promise.allSettled(jobs);
+        if (!pick || !list.includes(pick)) pick = list[0];
+        if (pick) await setAsset(eff, pick);
+      }
       buildAssetsForm();
       rebuildStage();
     });
@@ -2554,9 +2551,13 @@ function setCrystalParams(patch) {
 
       const jobs = [];
       if (obj.selected) {
-        for (const cat of ALL_ASSET_CATEGORIES) {
+        for (const cat of CATEGORIES) {
           const f = obj.selected[cat];
           if (f) jobs.push(setAsset(cat, f));
+        }
+        for (const cat of MERPONY_CATEGORIES) {
+          const f = obj.selected[cat];
+          if (f) state.selected[cat] = f;
         }
       }
       Promise.allSettled(jobs).then(()=>{
@@ -2573,7 +2574,8 @@ function setCrystalParams(patch) {
     function normalizePath(p){return p.replace(/\\/g,"/")}
     function extractAssetsRelativePath(full){const n=full.toLowerCase();const idx=n.lastIndexOf("assets/");return idx>=0?full.slice(idx):full}
     function buildManifestFromVirtualFS() {
-      for (const c of ALL_ASSET_CATEGORIES) ASSET_MANIFEST[c] = [];
+      for (const c of MANIFEST_CATEGORIES) ASSET_MANIFEST[c] = [];
+      PRELOADED_ASSETS.clear();
       CRYSTAL_MANIFEST.length = 0;
       IRIS_MANIFEST.length = 0;
       EYE_GLMR_MANIFEST.length = 0;
@@ -2605,7 +2607,7 @@ function setCrystalParams(patch) {
           }
         }
       }
-      for (const c of ALL_ASSET_CATEGORIES) ASSET_MANIFEST[c].sort();
+      for (const c of MANIFEST_CATEGORIES) ASSET_MANIFEST[c].sort();
       CRYSTAL_MANIFEST.sort();
       IRIS_MANIFEST.sort();
       EYE_GLMR_MANIFEST.sort();
@@ -2613,24 +2615,27 @@ function setCrystalParams(patch) {
     async function autoLoadFirstFromManifest() {
       const jobs = [];
 
-      // Active categories are rendered immediately. Merpony variants are only selected
-      // here and loaded later, when the Merpony switch is enabled.
       for (const cat of CATEGORIES) {
         const list = ASSET_MANIFEST[cat] || [];
         if (!list.length) continue;
         const pick = (state.selected[cat] && list.includes(state.selected[cat])) ? state.selected[cat] : list[0];
-        state.selected[cat] = pick;
         jobs.push(setAsset(cat, pick));
       }
 
-      for (const cat of EXTRA_ASSET_CATEGORIES) {
+      // Merpony assets are fetched immediately and kept in cache, but they are not rendered
+      // and they stay hidden from the Body/Tail UI until the Merpony switch is active.
+      for (const cat of MERPONY_CATEGORIES) {
         const list = ASSET_MANIFEST[cat] || [];
         if (!list.length) continue;
         const pick = (state.selected[cat] && list.includes(state.selected[cat])) ? state.selected[cat] : list[0];
         state.selected[cat] = pick;
+        for (const fileName of list) {
+          jobs.push(preloadAsset(cat, fileName).catch(err => {
+            console.warn(`Nie udało się wstępnie wczytać ${cat}/${fileName}`, err);
+          }));
+        }
       }
 
-      // Eye overlay: choose first available iris/glimmer if not set
       if (!state.eyeOverlay.iris && IRIS_MANIFEST.length) {
         state.eyeOverlay.iris = IRIS_MANIFEST[0];
       }
@@ -2639,27 +2644,27 @@ function setCrystalParams(patch) {
       }
 
       await Promise.allSettled(jobs);
-      await refreshEyeOverlay();
+      refreshEyeOverlay();
 
       if (!state.crystal.texture && CRYSTAL_MANIFEST.length) {
         state.crystal.texture = CRYSTAL_MANIFEST[0];
       }
       if (state.links?.tailMatchesMane) { propagateManeToTail(); reapplyAllColors(); }
     }
+
     async function loadManifestFromServer() {
       try {
         const resp = await fetch("assets/manifest.json", { cache: "no-cache" });
         if (!resp.ok) throw new Error(`assets/manifest.json: ${resp.status} ${resp.statusText}`);
         const manifest = await resp.json();
 
-        for (const c of CATEGORIES) ASSET_MANIFEST[c] = [];
-        ASSET_MANIFEST["body-merpony"] = [];
-        ASSET_MANIFEST["tail-merpony"] = [];
+        for (const c of MANIFEST_CATEGORIES) ASSET_MANIFEST[c] = [];
+        PRELOADED_ASSETS.clear();
         CRYSTAL_MANIFEST.length = 0;
         IRIS_MANIFEST.length = 0;
         EYE_GLMR_MANIFEST.length = 0;
 
-        for (const key of ALL_ASSET_CATEGORIES) {
+        for (const key of MANIFEST_CATEGORIES) {
           if (Array.isArray(manifest[key])) {
             ASSET_MANIFEST[key] = manifest[key]
               .filter(fileName => typeof fileName === "string" && fileName.toLowerCase().endsWith(".svg"))
