@@ -771,7 +771,7 @@ function reapplyAllColors() {
         return await f.text();
       }
 
-      const resp = await fetchWithRetry(url, { cache: "no-cache" }, 3, 250);
+      const resp = await fetchWithRetry(url, {}, 3, 250);
       return await resp.text();
     }
     async function loadSVGAsset(category, fileName) {
@@ -2625,7 +2625,7 @@ function setCrystalParams(patch) {
     }
     async function loadManifestFromServer() {
       try {
-        const resp = await fetchWithRetry("assets/manifest.json", { cache: "no-cache" }, 3, 250);
+        const resp = await fetchWithRetry("assets/manifest.json", {}, 3, 250);
         if (!resp.ok) throw new Error(`assets/manifest.json: ${resp.status} ${resp.statusText}`);
         const manifest = await resp.json();
 
