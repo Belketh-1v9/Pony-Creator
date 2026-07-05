@@ -73,9 +73,7 @@
   <header>
     <h1>MLP Pony Creator — HTML MVP</h1>
     <div class="actions">
-      <button id="btnPickDir" title="Wgraj folder 'assets' z podkatalogami">Wgraj folder assets</button>
-      <input id="dirPicker" type="file" webkitdirectory directory multiple style="display:none" />
-      <span id="modeStatus" class="status">Tryb: <b>Serwer</b> (fetch z assets/…)</span>
+      <span id="modeStatus" class="status">Tryb: <b>Online</b> (assets z repo)</span>
 
       <button id="btnExportSVG" title="Eksportuj aktualną scenę do SVG">Eksport SVG</button>
       <button id="btnExportPNG" title="Eksport PNG">Eksport PNG</button>
@@ -2605,6 +2603,54 @@ function setCrystalParams(patch) {
       }
       if (state.links?.tailMatchesMane) { propagateManeToTail(); reapplyAllColors(); }
     }
+    async function loadManifestFromServer() {
+      try {
+        const resp = await fetch("assets/manifest.json", { cache: "no-cache" });
+        if (!resp.ok) throw new Error(`assets/manifest.json: ${resp.status} ${resp.statusText}`);
+        const manifest = await resp.json();
+
+        for (const c of CATEGORIES) ASSET_MANIFEST[c] = [];
+        ASSET_MANIFEST["body-merpony"] = [];
+        ASSET_MANIFEST["tail-merpony"] = [];
+        CRYSTAL_MANIFEST.length = 0;
+        IRIS_MANIFEST.length = 0;
+        EYE_GLMR_MANIFEST.length = 0;
+
+        for (const key of [...CATEGORIES, "body-merpony", "tail-merpony"]) {
+          if (Array.isArray(manifest[key])) {
+            ASSET_MANIFEST[key] = manifest[key]
+              .filter(fileName => typeof fileName === "string" && fileName.toLowerCase().endsWith(".svg"))
+              .sort();
+          }
+        }
+
+        if (Array.isArray(manifest.iris)) {
+          IRIS_MANIFEST.push(...manifest.iris
+            .filter(fileName => typeof fileName === "string" && fileName.toLowerCase().endsWith(".svg"))
+            .sort());
+        }
+        if (Array.isArray(manifest.glimmer)) {
+          EYE_GLMR_MANIFEST.push(...manifest.glimmer
+            .filter(fileName => typeof fileName === "string" && fileName.toLowerCase().endsWith(".svg"))
+            .sort());
+        }
+        if (Array.isArray(manifest.crystal)) {
+          CRYSTAL_MANIFEST.push(...manifest.crystal
+            .filter(fileName => typeof fileName === "string" && /\.(png|jpg|jpeg|webp|svg)$/i.test(fileName))
+            .sort());
+        }
+
+        const status = document.getElementById("modeStatus");
+        if (status) status.innerHTML = 'Tryb: <b>Online</b> — wczytano manifest z assets/manifest.json';
+        return true;
+      } catch (err) {
+        console.warn("Nie udało się wczytać assets/manifest.json", err);
+        const status = document.getElementById("modeStatus");
+        if (status) status.innerHTML = 'Tryb: <b>Online</b> — brak lub błąd assets/manifest.json';
+        return false;
+      }
+    }
+
     async function handleDirUpload(files) {
       virtualFS.clear();
       for (const f of files) {
@@ -2635,14 +2681,6 @@ function setCrystalParams(patch) {
         try { loadPreset(JSON.parse(await file.text())); } catch { alert("Nieprawidłowy preset JSON."); }
       });
 
-      const btnPick = document.getElementById("btnPickDir");
-      const dirPicker = document.getElementById("dirPicker");
-      btnPick.addEventListener("click", ()=> dirPicker.click());
-      dirPicker.addEventListener("change", e => {
-        const files = e.target.files;
-        if (files && files.length) handleDirUpload(files);
-      });
-
       // ——— Mysza / dotyk: aktualizuj połysk i hue-shift z throttlingiem (rAF)
       const stage = document.getElementById("stage");
       const move = (e) => { const n=toStageNorm(e); mouseState.mx=n.mx; mouseState.my=n.my; scheduleShine(); };
@@ -2661,11 +2699,13 @@ function setCrystalParams(patch) {
 
     (async function autoLoadFirst(){
       if (useVirtualFS) return;
-      for (const cat of CATEGORIES) {
-        const first = ASSET_MANIFEST[cat]?.[0];
-        if (first) { try { await setAsset(cat, first); } catch {} }
-      }
-      // brak listy crystal bez uploadu — użytkownik może dodać później
+
+      const ok = await loadManifestFromServer();
+      if (!ok) return;
+
+      buildAssetsForm();
+      buildColorsForm();
+      await autoLoadFirstFromManifest();
     })();
   </script>
 </body>
