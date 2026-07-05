@@ -71,7 +71,7 @@
 </head>
 <body>
   <header>
-    <h1>MLP Pony Creator — HTML MVP</h1>
+    <h1>Pony Creator by Belketh</h1>
     <div class="actions">
       <span id="modeStatus" class="status">Tryb: <b>Online</b> (assets z repo)</span>
 
@@ -109,6 +109,9 @@
       "body","mane","tail","horn","wings","ears","eye","head",
       "accessories","cutiemark","gem"
     , "background"];
+
+    const EXTRA_ASSET_CATEGORIES = ["body-merpony", "tail-merpony"];
+    const ALL_ASSET_CATEGORIES = [...CATEGORIES, ...EXTRA_ASSET_CATEGORIES];
 
     const COLOR_TOKENS = [
       "coat","detail-1","detail-2","hooves",
@@ -157,11 +160,8 @@
     ]);
 
     // Manifest assetów (SVG) + manifest tekstur kryształu
-    const ASSET_MANIFEST = Object.fromEntries(CATEGORIES.map(c => [c, []]));
-    
-    ASSET_MANIFEST["body-merpony"] = [];
-
-    ASSET_MANIFEST["tail-merpony"] = [];const CRYSTAL_MANIFEST = [];
+    const ASSET_MANIFEST = Object.fromEntries(ALL_ASSET_CATEGORIES.map(c => [c, []]));
+    const CRYSTAL_MANIFEST = [];
 // Eye overlay manifests
 const IRIS_MANIFEST = [];
 const EYE_GLMR_MANIFEST = []; // using assets/glimmer/ as source for eye glimmer variants
@@ -181,7 +181,7 @@ colors: {
         "mane-main":"#7c55c8","mane-hl-1":"#9f7be2","mane-hl-2":"#bba1f1",
         "tail-main":"#7c55c8","tail-hl-1":"#9f7be2","tail-hl-2":"#bba1f1"
       },
-      selected: Object.fromEntries(CATEGORIES.map(c=>[c, null])),
+      selected: Object.fromEntries(ALL_ASSET_CATEGORIES.map(c=>[c, null])),
       links: { tailMatchesMane: false },
       layers: [],
       crystal: {
@@ -1706,18 +1706,25 @@ addEyeControls(secEyes);
     const row = document.createElement("div"); row.className="row";
     const l = document.createElement("label"); l.textContent = "Merpony";
     const c = document.createElement("input"); c.type="checkbox"; c.checked = !!state.merpony;
-    c.addEventListener("change", e => {
- state.merpony = !!e.target.checked;
+    c.addEventListener("change", async e => {
+      state.merpony = !!e.target.checked;
+
       // Remove any previous body/body-merpony and tail/tail-merpony layer entries
       state.layers = state.layers.filter(x => !["body","body-merpony","tail","tail-merpony"].includes(x.category));
-      // Decide effective categories and pick files
-      ["body","tail"].forEach(base => {
-        const eff = (state.merpony && (base === "body" || base === "tail")) ? (base + "-merpony") : base;
+
+      // Decide effective categories and load them before rebuilding the UI/stage.
+      const jobs = ["body","tail"].map(base => {
+        const eff = state.merpony ? (base + "-merpony") : base;
         const list = ASSET_MANIFEST[eff] || [];
         let pick = state.selected[eff];
-        if (!pick || !list.includes(pick)) pick = list[0];
-        if (pick) setAsset(eff, pick);
+        if (!pick || !list.includes(pick)) {
+          pick = list[0] || null;
+          state.selected[eff] = pick;
+        }
+        return pick ? setAsset(eff, pick) : Promise.resolve();
       });
+
+      await Promise.allSettled(jobs);
       buildAssetsForm();
       rebuildStage();
     });
@@ -2523,7 +2530,7 @@ function setCrystalParams(patch) {
 
       const jobs = [];
       if (obj.selected) {
-        for (const cat of CATEGORIES) {
+        for (const cat of ALL_ASSET_CATEGORIES) {
           const f = obj.selected[cat];
           if (f) jobs.push(setAsset(cat, f));
         }
@@ -2542,7 +2549,7 @@ function setCrystalParams(patch) {
     function normalizePath(p){return p.replace(/\\/g,"/")}
     function extractAssetsRelativePath(full){const n=full.toLowerCase();const idx=n.lastIndexOf("assets/");return idx>=0?full.slice(idx):full}
     function buildManifestFromVirtualFS() {
-      for (const c of CATEGORIES) ASSET_MANIFEST[c] = [];
+      for (const c of ALL_ASSET_CATEGORIES) ASSET_MANIFEST[c] = [];
       CRYSTAL_MANIFEST.length = 0;
       IRIS_MANIFEST.length = 0;
       EYE_GLMR_MANIFEST.length = 0;
@@ -2574,19 +2581,31 @@ function setCrystalParams(patch) {
           }
         }
       }
-      for (const c of CATEGORIES) ASSET_MANIFEST[c].sort();
+      for (const c of ALL_ASSET_CATEGORIES) ASSET_MANIFEST[c].sort();
       CRYSTAL_MANIFEST.sort();
       IRIS_MANIFEST.sort();
       EYE_GLMR_MANIFEST.sort();
     }
     async function autoLoadFirstFromManifest() {
       const jobs = [];
+
+      // Active categories are rendered immediately. Merpony variants are only selected
+      // here and loaded later, when the Merpony switch is enabled.
       for (const cat of CATEGORIES) {
         const list = ASSET_MANIFEST[cat] || [];
         if (!list.length) continue;
         const pick = (state.selected[cat] && list.includes(state.selected[cat])) ? state.selected[cat] : list[0];
+        state.selected[cat] = pick;
         jobs.push(setAsset(cat, pick));
-      
+      }
+
+      for (const cat of EXTRA_ASSET_CATEGORIES) {
+        const list = ASSET_MANIFEST[cat] || [];
+        if (!list.length) continue;
+        const pick = (state.selected[cat] && list.includes(state.selected[cat])) ? state.selected[cat] : list[0];
+        state.selected[cat] = pick;
+      }
+
       // Eye overlay: choose first available iris/glimmer if not set
       if (!state.eyeOverlay.iris && IRIS_MANIFEST.length) {
         state.eyeOverlay.iris = IRIS_MANIFEST[0];
@@ -2594,10 +2613,10 @@ function setCrystalParams(patch) {
       if (!state.eyeOverlay.glimmer && EYE_GLMR_MANIFEST.length) {
         state.eyeOverlay.glimmer = EYE_GLMR_MANIFEST[0];
       }
-      await Promise.resolve();
-      refreshEyeOverlay();
-}
+
       await Promise.allSettled(jobs);
+      await refreshEyeOverlay();
+
       if (!state.crystal.texture && CRYSTAL_MANIFEST.length) {
         state.crystal.texture = CRYSTAL_MANIFEST[0];
       }
@@ -2616,7 +2635,7 @@ function setCrystalParams(patch) {
         IRIS_MANIFEST.length = 0;
         EYE_GLMR_MANIFEST.length = 0;
 
-        for (const key of [...CATEGORIES, "body-merpony", "tail-merpony"]) {
+        for (const key of ALL_ASSET_CATEGORIES) {
           if (Array.isArray(manifest[key])) {
             ASSET_MANIFEST[key] = manifest[key]
               .filter(fileName => typeof fileName === "string" && fileName.toLowerCase().endsWith(".svg"))
