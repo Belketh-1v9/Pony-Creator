@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1000"
+   height="1000"
+   viewBox="0 0 1000 1000"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1" /><g
+     id="layer6"
+     data-layer="500"><g
+       id="layer9"
+       line="3"
+       class="lashes"><path
+         style="display:inline;fill:#fd340f;fill-opacity:1;fill-rule:evenodd;stroke-width:5;stroke-linecap:round"
+         d="m 311.08148,353.06193 c -4.19332,8.98567 -6.05071,14.39254 -5.94711,18.12364 0.94795,-0.12503 1.37163,-0.32135 2.46679,-0.17481 -8.59424,39.86509 33.60546,67.52259 59.3563,61.56042 37.60979,-8.70791 49.11214,-38.63239 41.58771,-65.60695 -7.52444,-26.97457 -27.65665,-42.99052 -50.77623,-43.74276 -23.11959,-0.75224 -41.17915,18.03696 -46.68746,29.84046 z"
+         id="path4"
+         color="eye-lashes"
+         data-layer="500" /><path
+         style="display:inline;fill:#e9fd0f;fill-rule:evenodd;stroke-width:5;stroke-linecap:round"
+         d="m 327.69751,339.59349 c -30.86595,23.84444 -28.68311,90.75381 22.91456,95.53458 50.57576,4.68608 63.15473,-43.65878 52.78597,-72.56471 -10.36877,-28.90594 -44.83459,-46.81431 -75.70053,-22.96987 z"
+         id="path2"
+         color="eye_white"
+         data-layer="500" /></g></g></svg>

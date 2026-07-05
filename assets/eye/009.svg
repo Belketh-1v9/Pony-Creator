@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1000"
+   height="1000"
+   viewBox="0 0 1000 1000"
+   version="1.1"
+   id="svg1"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1" /><g
+     id="layer6"
+     data-layer="500"><g
+       id="layer9"
+       line="3"
+       class="lashes"><path
+         style="display:inline;fill:#e9fd0f;fill-rule:evenodd;stroke-width:5;stroke-linecap:round"
+         d="m 298.77959,373.03167 c 3.40061,30.7873 23.08455,52.77199 56.5105,51.09158 33.42595,-1.6804 42.77077,-19.07495 47.96052,-51.2546 -40.99,-0.0513 -76.33738,-0.41385 -104.47102,0.16302 z"
+         id="path2"
+         color="eye_white"
+         data-layer="500" /><path
+         style="display:inline;fill:#fd340f;fill-opacity:1;fill-rule:evenodd;stroke-width:5;stroke-linecap:round"
+         d="m 290.33414,374.21313 c 0.98909,2.88721 40.92906,0.59282 71.44867,0.1433 20.30707,-0.29911 54.63681,0.59981 49.20701,-3.2845 -4.13053,-2.95486 -53.73316,-1.61529 -76.28959,-2.34921 -23.68274,-0.77056 -45.98739,0.75771 -44.36609,5.49041 z"
+         id="path4"
+         color="eye-lashes"
+         data-layer="500" /></g></g></svg>
